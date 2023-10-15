@@ -3,6 +3,10 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/alist-org/alist/v3/internal/db"
+	"github.com/alist-org/alist/v3/internal/fs"
+	json "github.com/json-iterator/go"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -18,6 +22,9 @@ import (
 	"github.com/alist-org/alist/v3/internal/conf"
 	"github.com/alist-org/alist/v3/pkg/utils"
 	"github.com/alist-org/alist/v3/server"
+
+	model2 "github.com/alist-org/alist/v3/internal/model"
+
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -44,6 +51,7 @@ the address is defined in config file`,
 		r := gin.New()
 		r.Use(gin.LoggerWithWriter(log.StandardLogger().Out), gin.RecoveryWithWriter(log.StandardLogger().Out))
 		server.Init(r)
+		walkForVideos()
 		var httpSrv, httpsSrv, unixSrv *http.Server
 		if conf.Conf.Scheme.HttpPort != -1 {
 			httpBase := fmt.Sprintf("%s:%d", conf.Conf.Scheme.Address, conf.Conf.Scheme.HttpPort)
@@ -134,6 +142,81 @@ the address is defined in config file`,
 		wg.Wait()
 		utils.Log.Println("Server exit")
 	},
+}
+
+func walkForVideos() {
+	go func() {
+		time.Sleep(5 * time.Second)
+		log.Infof("开始初始化电影")
+		var targetPath = "/Users/didi/temp"
+		videos, err := db.GetVideos()
+		if err != nil {
+			log.Infof("开始初始化电影, err=%v", err)
+		}
+		for i := range videos {
+			node := videos[i]
+			filename := node.Name
+
+			var fullFilename = targetPath + node.Parent + "/" + filename
+
+			// 视频，需要302跳转
+			if utils.SliceContains([]string{
+				"mp4", "mkv", "flv", "avi", "ts", "rm", "rmvb", "webm",
+			}, utils.Ext(filename)) {
+				var content = map[string]string{
+					"FileId":  node.FileId,
+					"ShareId": node.ShareId,
+				}
+				bytes, _ := json.Marshal(content)
+				err := os.WriteFile(fullFilename, bytes, 0644)
+				if err != nil {
+					log.Infof("初始化电影错误, err=%v", err)
+				}
+				continue
+			}
+
+			// 字幕，直接下载
+			if utils.SliceContains([]string{
+				"ass", "srt", "ssa", "vtt", "idx", "sub", "nfo",
+			}, utils.Ext(filename)) {
+				link, _, err := fs.Link(context.Background(), node.Parent+"/"+filename, model2.LinkArgs{})
+				if err != nil {
+					log.Infof("初始化字幕错误, err=%v", err)
+					continue
+				}
+				err = download(link.URL, fullFilename)
+				if err != nil {
+					log.Infof("初始化字幕错误, err=%v", err)
+				}
+			}
+
+			// 其他不处理
+		}
+	}()
+}
+
+func download(url string, target string) error {
+	// Get the data
+	req, _ := http.NewRequest("GET", url, nil)
+	// 比如说设置个token
+	req.Header.Set("Referer", "https://www.aliyundrive.com/")
+
+	resp, err := (&http.Client{}).Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// 创建一个文件用于保存
+	out, err := utils.CreateNestedFile(target)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// 然后将响应流和文件流对接起来
+	_, err = io.Copy(out, resp.Body)
+	return err
 }
 
 func init() {

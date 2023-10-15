@@ -21,10 +21,12 @@ type SearchReq struct {
 }
 
 type SearchNode struct {
-	Parent string `json:"parent" gorm:"index"`
-	Name   string `json:"name"`
-	IsDir  bool   `json:"is_dir"`
-	Size   int64  `json:"size"`
+	Parent  string `json:"parent" gorm:"index"`
+	Name    string `json:"name"`
+	IsDir   bool   `json:"is_dir"`
+	Size    int64  `json:"size"`
+	ShareId string `json:"share_id"`
+	FileId  string `json:"file_id"`
 }
 
 func (p *SearchReq) Validate() error {

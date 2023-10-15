@@ -74,6 +74,7 @@ func (d *Alias) list(ctx context.Context, dst, sub string) ([]model.Obj, error) 
 	return utils.SliceConvert(objs, func(obj model.Obj) (model.Obj, error) {
 		thumb, ok := model.GetThumb(obj)
 		objRes := model.Object{
+			ID:       obj.GetID(),
 			Name:     obj.GetName(),
 			Size:     obj.GetSize(),
 			Modified: obj.ModTime(),
@@ -81,6 +82,10 @@ func (d *Alias) list(ctx context.Context, dst, sub string) ([]model.Obj, error) 
 		}
 		if !ok {
 			return &objRes, nil
+		}
+		if getter, ok := obj.(model.ShareIDGetter); ok {
+			objRes.ShareID = getter.GetShareID()
+			objRes.ID = getter.GetID()
 		}
 		return &model.ObjThumb{
 			Object: objRes,

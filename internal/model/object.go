@@ -11,6 +11,14 @@ type ObjWrapName struct {
 	Obj
 }
 
+func (o *ObjWrapName) GetShareID() string {
+	obj := o.Obj
+	if thumb, ok := obj.(*ObjThumb); ok {
+		return thumb.ShareID
+	}
+	return ""
+}
+
 func (o *ObjWrapName) Unwrap() Obj {
 	return o.Obj
 }
@@ -23,6 +31,7 @@ func (o *ObjWrapName) GetName() string {
 }
 
 type Object struct {
+	ShareID  string
 	ID       string
 	Path     string
 	Name     string

@@ -19,6 +19,11 @@ type ObjUnwrap interface {
 	Unwrap() Obj
 }
 
+type ShareIDGetter interface {
+	GetShareID() string
+	GetID() string
+}
+
 type Obj interface {
 	GetSize() int64
 	GetName() string

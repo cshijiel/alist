@@ -68,6 +68,13 @@ type ObjWithParent struct {
 	model.Obj
 }
 
+func (p *ObjWithParent) GetShareID() string {
+	if thumb, ok := p.Obj.(*model.ObjWrapName); ok {
+		return thumb.GetShareID()
+	}
+	return ""
+}
+
 func BatchIndex(ctx context.Context, objs []ObjWithParent) error {
 	if instance == nil {
 		return errs.SearchNotAvailable
@@ -77,12 +84,15 @@ func BatchIndex(ctx context.Context, objs []ObjWithParent) error {
 	}
 	var searchNodes []model.SearchNode
 	for i := range objs {
-		searchNodes = append(searchNodes, model.SearchNode{
+		node := model.SearchNode{
 			Parent: objs[i].Parent,
 			Name:   objs[i].GetName(),
 			IsDir:  objs[i].IsDir(),
 			Size:   objs[i].GetSize(),
-		})
+		}
+		node.ShareId = objs[i].GetShareID()
+		node.FileId = objs[i].GetID()
+		searchNodes = append(searchNodes, node)
 	}
 	return instance.BatchIndex(ctx, searchNodes)
 }

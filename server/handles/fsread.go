@@ -42,6 +42,7 @@ type ObjResp struct {
 	Thumb       string                     `json:"thumb"`
 	Type        int                        `json:"type"`
 	HashInfoStr string                     `json:"hashinfo"`
+	ID          string                     `json:"id"`
 	HashInfo    map[*utils.HashType]string `json:"hash_info"`
 }
 
@@ -217,6 +218,7 @@ func toObjsResp(objs []model.Obj, parent string, encrypt bool) []ObjResp {
 			Created:     obj.CreateTime(),
 			HashInfoStr: obj.GetHash().String(),
 			HashInfo:    obj.GetHash().Export(),
+			ID:          obj.GetID(),
 			Sign:        common.Sign(obj, parent, encrypt),
 			Thumb:       thumb,
 			Type:        utils.GetObjType(obj.GetName(), obj.IsDir()),

@@ -89,3 +89,11 @@ func SearchNode(req model.SearchReq, useFullText bool) ([]model.SearchNode, int6
 	}
 	return files, count, nil
 }
+
+func GetVideos() ([]model.SearchNode, error) {
+	var nodes []model.SearchNode
+	if err := db.Where("is_dir=0 and parent like '/电影%'").Find(&nodes).Error; err != nil {
+		return nil, err
+	}
+	return nodes, nil
+}

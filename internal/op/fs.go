@@ -107,6 +107,7 @@ func List(ctx context.Context, storage driver.Driver, path string, args model.Li
 	path = utils.FixAndCleanPath(path)
 	log.Debugf("op.List %s", path)
 	key := Key(storage, path)
+	// For test TODO vroc
 	if !utils.IsBool(refresh...) {
 		if files, ok := listCache.Get(key); ok {
 			log.Debugf("use cache when list %s", path)

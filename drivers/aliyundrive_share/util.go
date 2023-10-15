@@ -3,6 +3,9 @@ package aliyundrive_share
 import (
 	"errors"
 	"fmt"
+	"github.com/alist-org/alist/v3/internal/conf"
+	"github.com/alist-org/alist/v3/pkg/utils"
+	"strings"
 
 	"github.com/alist-org/alist/v3/drivers/base"
 	"github.com/alist-org/alist/v3/internal/op"
@@ -69,10 +72,14 @@ func (d *AliyundriveShare) request(url, method string, callback base.ReqCallback
 	if callback != nil {
 		callback(req)
 	} else {
+		log.Debugf("request url:%s", url)
 		req.SetBody("{}")
 	}
+	log.Debugf("request Body:%s", req.Body)
+	log.Debugf("request Header:%s", req.Header)
 	resp, err := req.Execute(method, url)
 	if err != nil {
+		log.Debugf("request error:%s", err)
 		return nil, err
 	}
 	if e.Code != "" {
@@ -137,5 +144,28 @@ func (d *AliyundriveShare) getFiles(fileId string) ([]File, error) {
 	if len(files) > 0 && d.DriveId == "" {
 		d.DriveId = files[0].DriveId
 	}
-	return files, nil
+	// TODO 返回文件处理
+	for i := range files {
+		files[i].ShareId = d.ShareId
+		file := files[i]
+		filename := file.Name
+		fmt.Println(file.FileId, filename)
+		if d.ShareId == "MYMxcZkP9A7" && strings.Contains(filename, "4K") {
+			files[i].Name = strings.Split(filename, " ")[0]
+		}
+	}
+
+	// 清理不需要的文件、文件夹
+	out := make([]File, 0)
+	for i := range files {
+		file := files[i]
+		if strings.Contains(file.Name, "阿里号“猪是的看左向右从”分享，其余为盗发") {
+			continue
+		}
+		if file.Type != "folder" && utils.GetFileType(file.Name) != conf.VIDEO {
+			continue
+		}
+		out = append(out, file)
+	}
+	return out, nil
 }
